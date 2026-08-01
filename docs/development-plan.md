@@ -11,6 +11,8 @@ No Go implementation or dependency is introduced.
 
 ## Stage 1 — process skeleton and health
 
+Status: complete.
+
 Create the Go module, `cmd/api/main.go`, the standard `http.ServeMux`, `/health`,
 application context, and bounded graceful shutdown. Verify with `go run`, `curl`,
 `go test`, `go vet`, and a manual SIGINT test.

@@ -11,8 +11,9 @@ updates.
 
 ## Current stage
 
-Stage 0 contains contracts and the planned package structure only. There is no Go
-implementation yet.
+Stage 0 contracts are fixed. Stage 1 provides the Go module, health endpoint,
+application signal context, and graceful HTTP shutdown. Domain implementation has
+not started yet.
 
 ## Documents
 
