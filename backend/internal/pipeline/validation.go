@@ -29,6 +29,10 @@ func (p Pipeline) Validate() error {
 		})
 	}
 
+	for index, job := range p.Jobs {
+		errs = append(errs, validateJobFields(index, job)...)
+	}
+
 	if len(errs) == 0 {
 		return nil
 	}
