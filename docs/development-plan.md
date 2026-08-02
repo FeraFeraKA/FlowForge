@@ -19,6 +19,8 @@ application context, and bounded graceful shutdown. Verify with `go run`, `curl`
 
 ## Stage 2 — Pipeline model and DAG validation
 
+Status: complete.
+
 Implement data types and pure validation with table-driven tests for duplicates,
 unknown dependencies, self-dependencies, cycles, and valid graphs.
 
