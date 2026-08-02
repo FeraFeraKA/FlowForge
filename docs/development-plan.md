@@ -26,6 +26,8 @@ unknown dependencies, self-dependencies, cycles, and valid graphs.
 
 ## Stage 3 — Pipeline repository and service
 
+Status: complete.
+
 Implement the mutex-protected in-memory repository and prove through tests that
 saved and returned values cannot mutate repository-owned data.
 
