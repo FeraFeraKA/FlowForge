@@ -33,6 +33,9 @@ func (p Pipeline) Validate() error {
 		errs = append(errs, validateJobFields(index, job)...)
 	}
 
+	dependencyResult := validateDependencies(p.Jobs)
+	errs = append(errs, dependencyResult.errors...)
+
 	if len(errs) == 0 {
 		return nil
 	}
