@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -52,4 +53,26 @@ func (r *MemoryRepository) GetByID(ctx context.Context, id string) (Pipeline, er
 	}
 
 	return clonePipeline(stored), nil
+}
+
+func (r *MemoryRepository) List(ctx context.Context) ([]Pipeline, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	r.mu.RLock()
+	pipelines := make([]Pipeline, 0, len(r.pipelines))
+	for _, stored := range r.pipelines {
+		pipelines = append(pipelines, clonePipeline(stored))
+	}
+	r.mu.RUnlock()
+
+	sort.Slice(pipelines, func(left, right int) bool {
+		if pipelines[left].CreatedAt.Equal(pipelines[right].CreatedAt) {
+			return pipelines[left].ID < pipelines[right].ID
+		}
+		return pipelines[left].CreatedAt.After(pipelines[right].CreatedAt)
+	})
+
+	return pipelines, nil
 }
