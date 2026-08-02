@@ -35,6 +35,13 @@ func (p Pipeline) Validate() error {
 
 	dependencyResult := validateDependencies(p.Jobs)
 	errs = append(errs, dependencyResult.errors...)
+	if dependencyResult.graphValid && hasDependencyCycle(p.Jobs) {
+		errs = append(errs, ValidationError{
+			Field:   "jobs",
+			Code:    "dependency_cycle",
+			Message: "dependency graph contains a cycle",
+		})
+	}
 
 	if len(errs) == 0 {
 		return nil
