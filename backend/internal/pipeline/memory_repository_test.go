@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -61,5 +63,44 @@ func mustCreatePipeline(t *testing.T, repository *MemoryRepository, pipeline Pip
 	t.Helper()
 	if err := repository.Create(context.Background(), pipeline); err != nil {
 		t.Fatalf("Create() error = %v", err)
+	}
+}
+
+func TestMemoryRepositoryConcurrentAccess(t *testing.T) {
+	const pipelineCount = 50
+	repository := NewMemoryRepository()
+	errCh := make(chan error, pipelineCount*2)
+	var workers sync.WaitGroup
+
+	for index := range pipelineCount {
+		workers.Add(2)
+		go func() {
+			defer workers.Done()
+			pipeline := validPipeline()
+			pipeline.ID = fmt.Sprintf("pipeline-%d", index)
+			if err := repository.Create(context.Background(), pipeline); err != nil {
+				errCh <- err
+			}
+		}()
+		go func() {
+			defer workers.Done()
+			if _, err := repository.List(context.Background()); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	workers.Wait()
+	close(errCh)
+	for err := range errCh {
+		t.Errorf("concurrent repository operation: %v", err)
+	}
+
+	pipelines, err := repository.List(context.Background())
+	if err != nil {
+		t.Fatalf("final List() error = %v", err)
+	}
+	if len(pipelines) != pipelineCount {
+		t.Errorf("final pipeline count = %d, want %d", len(pipelines), pipelineCount)
 	}
 }
