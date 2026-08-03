@@ -47,6 +47,8 @@ and timeout deterministically.
 
 ## Stage 6 — sequential scheduler
 
+Status: complete.
+
 Implement dependency readiness, retries, blocking, cancellation, and terminal Run
 status with one job executing at a time. Use deterministic fake executors in tests.
 
