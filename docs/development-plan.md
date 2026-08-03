@@ -40,6 +40,8 @@ goroutines yet.
 
 ## Stage 5 — DelayExecutor
 
+Status: complete.
+
 Implement timer completion and context cancellation. Test success, cancellation,
 and timeout deterministically.
 

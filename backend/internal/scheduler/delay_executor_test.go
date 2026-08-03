@@ -42,6 +42,35 @@ func TestDelayExecutorReturnsDeadline(t *testing.T) {
 	}
 }
 
+func TestDelayExecutorRejectsInvalidConfig(t *testing.T) {
+	tests := []struct {
+		name       string
+		definition pipeline.JobDefinition
+	}{
+		{
+			name: "wrong executor type",
+			definition: pipeline.JobDefinition{
+				Type: "http", DelayConfig: &pipeline.DelayConfig{Duration: time.Second},
+			},
+		},
+		{
+			name:       "missing config",
+			definition: pipeline.JobDefinition{Type: pipeline.ExecutorTypeDelay},
+		},
+		{name: "zero duration", definition: delayDefinition(0)},
+		{name: "negative duration", definition: delayDefinition(-time.Second)},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := (DelayExecutor{}).Execute(context.Background(), test.definition)
+			if !errors.Is(err, ErrInvalidExecutorConfig) {
+				t.Errorf("Execute() error = %v, want ErrInvalidExecutorConfig", err)
+			}
+		})
+	}
+}
+
 func delayDefinition(duration time.Duration) pipeline.JobDefinition {
 	return pipeline.JobDefinition{
 		ID:          "delay",
