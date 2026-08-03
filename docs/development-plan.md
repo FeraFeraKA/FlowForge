@@ -33,6 +33,8 @@ saved and returned values cannot mutate repository-owned data.
 
 ## Stage 4 — Run model and state machine
 
+Status: complete.
+
 Implement explicit legal transitions and table-driven tests. There are no
 goroutines yet.
 
