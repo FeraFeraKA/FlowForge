@@ -2,6 +2,7 @@ package runmanager
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -29,6 +30,30 @@ func TestManagerRunsPipelineInBackground(t *testing.T) {
 	if finished.Status != runmodel.RunStatusCompleted ||
 		finished.Jobs[0].Status != runmodel.JobStatusCompleted {
 		t.Errorf("finished statuses = (%q, %q)", finished.Status, finished.Jobs[0].Status)
+	}
+}
+
+func TestManagerCancelsAndWaitsForRun(t *testing.T) {
+	manager, runs := testManager(t, time.Second)
+	initial, err := manager.StartRun(context.Background(), "pipeline")
+	if err != nil {
+		t.Fatalf("StartRun() error = %v", err)
+	}
+	if err := manager.Cancel(context.Background(), initial.ID); err != nil {
+		t.Fatalf("Cancel() error = %v", err)
+	}
+	manager.Wait()
+
+	cancelled, err := runs.GetByID(context.Background(), initial.ID)
+	if err != nil {
+		t.Fatalf("GetByID() error = %v", err)
+	}
+	if cancelled.Status != runmodel.RunStatusCancelled ||
+		cancelled.Jobs[0].Status != runmodel.JobStatusCancelled {
+		t.Errorf("cancelled statuses = (%q, %q)", cancelled.Status, cancelled.Jobs[0].Status)
+	}
+	if err := manager.Cancel(context.Background(), initial.ID); !errors.Is(err, ErrRunNotActive) {
+		t.Errorf("second Cancel() error = %v, want ErrRunNotActive", err)
 	}
 }
 
