@@ -54,10 +54,14 @@ status with one job executing at a time. Use deterministic fake executors in tes
 
 ## Stage 7 — Run repository and run manager
 
+Status: complete.
+
 Add deep snapshots, application-derived run contexts, active cancel registry, and
 cleanup after terminal completion.
 
 ## Stage 8 — concurrent scheduler
+
+Status: complete.
 
 Keep one coordinator as state owner. Add bounded concurrent attempts, result
 channels, `MaxParallel`, explicit completion, cancellation, and race tests.
