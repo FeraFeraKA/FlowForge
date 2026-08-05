@@ -21,6 +21,7 @@ type PipelineReader interface {
 
 type RunRepository interface {
 	Create(ctx context.Context, execution runmodel.Run) error
+	Save(ctx context.Context, execution runmodel.Run) error
 	GetByID(ctx context.Context, id string) (runmodel.Run, error)
 	List(ctx context.Context) ([]runmodel.Run, error)
 }
