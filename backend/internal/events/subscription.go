@@ -35,3 +35,19 @@ func (b *Bus) unsubscribe(runID string, subscriberID uint64) {
 	delete(b.subscribers[runID], subscriberID)
 	close(channel)
 }
+
+func (b *Bus) Close() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return
+	}
+	b.closed = true
+	for runID, subscribers := range b.subscribers {
+		for id, channel := range subscribers {
+			delete(subscribers, id)
+			close(channel)
+		}
+		delete(b.subscribers, runID)
+	}
+}
