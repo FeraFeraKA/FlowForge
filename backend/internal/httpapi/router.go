@@ -10,10 +10,25 @@ type healthResponse struct {
 	Status string `json:"status"`
 }
 
-func NewRouter() http.Handler {
+type Dependencies struct {
+	Pipelines      PipelineService
+	Runs           RunService
+	AllowedOrigins []string
+}
+
+func NewRouter(dependencies Dependencies) http.Handler {
 	mux := http.NewServeMux()
+	pipelines := pipelineHandler{service: dependencies.Pipelines}
+	runs := runHandler{service: dependencies.Runs}
 	mux.HandleFunc("GET /health", healthHandler)
-	return mux
+	mux.HandleFunc("POST /api/pipelines", pipelines.create)
+	mux.HandleFunc("GET /api/pipelines", pipelines.list)
+	mux.HandleFunc("GET /api/pipelines/{pipelineID}", pipelines.get)
+	mux.HandleFunc("POST /api/pipelines/{pipelineID}/runs", runs.start)
+	mux.HandleFunc("GET /api/runs/{runID}", runs.get)
+	mux.HandleFunc("POST /api/runs/{runID}/cancel", runs.cancel)
+	mux.HandleFunc("POST /api/runs/{runID}/retry", runs.retry)
+	return corsMiddleware(dependencies.AllowedOrigins, mux)
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
