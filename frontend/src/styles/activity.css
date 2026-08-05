@@ -1,0 +1,14 @@
+.live-label { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.live-label::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #36a97a; }
+.activity-list { padding: 7px 20px; }
+.activity-item { display: grid; grid-template-columns: 28px 1fr auto; align-items: start; gap: 10px; padding: 14px 0; border-bottom: 1px solid #eceef1; }
+.activity-item:last-child { border-bottom: 0; }
+.activity-item__icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; font-size: 10px; font-weight: 700; }
+.activity-item__icon--success { color: var(--green); background: var(--green-soft); }
+.activity-item__icon--info { color: var(--brand); background: var(--brand-soft); }
+.activity-item__icon--warning { color: var(--amber); background: var(--amber-soft); }
+.activity-item strong, .activity-item span { display: block; }
+.activity-item strong { color: #42464f; font-size: 10px; }
+.activity-item div > span { margin-top: 4px; color: #969ba4; font-size: 9px; }
+.activity-item time { padding-top: 2px; color: #a2a6ae; font-size: 8px; white-space: nowrap; }
+.activity-panel__footer { width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; border: 0; border-top: 1px solid var(--border); color: var(--brand); background: #fcfcfd; font-size: 10px; font-weight: 600; text-align: left; }
