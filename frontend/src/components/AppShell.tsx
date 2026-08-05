@@ -1,5 +1,7 @@
 import { Activity, Code2, Plus, SquareTerminal, Workflow } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
+import { api } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +11,7 @@ const links = [
 ]
 
 export function AppShell() {
+  const online = useBackendHealth()
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-[#0a0a0b] md:flex md:flex-col">
@@ -38,8 +41,8 @@ export function AppShell() {
           </nav>
         </div>
         <div className="mt-auto border-t p-4 text-[10px] text-muted-foreground">
-          <div className="mb-2 flex items-center gap-2 text-emerald-400">
-            <Activity className="size-3" /> BACKEND CONNECTED
+          <div className={cn('mb-2 flex items-center gap-2', online ? 'text-emerald-400' : 'text-rose-400')}>
+            <Activity className="size-3" /> BACKEND {online ? 'CONNECTED' : 'OFFLINE'}
           </div>
           <span>ENV / DEVELOPMENT</span>
         </div>
@@ -51,7 +54,7 @@ export function AppShell() {
             <SquareTerminal className="size-4 text-primary" /> FLOWFORGE
           </NavLink>
           <div className="hidden items-center gap-2 text-[10px] text-muted-foreground md:flex">
-            <span className="text-emerald-400">●</span> SYSTEM OPERATIONAL
+            <span className={online ? 'text-emerald-400' : 'text-rose-400'}>●</span> SYSTEM {online ? 'OPERATIONAL' : 'UNAVAILABLE'}
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon-sm">
@@ -64,4 +67,16 @@ export function AppShell() {
       </div>
     </div>
   )
+}
+
+function useBackendHealth() {
+  const [online, setOnline] = useState(false)
+  useEffect(() => {
+    let active = true
+    const check = () => api.health().then(() => { if (active) setOnline(true) }).catch(() => { if (active) setOnline(false) })
+    void check()
+    const interval = window.setInterval(check, 10_000)
+    return () => { active = false; window.clearInterval(interval) }
+  }, [])
+  return online
 }

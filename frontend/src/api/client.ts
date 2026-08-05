@@ -36,6 +36,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  health: () => request<{ status: string }>('/health'),
   listPipelines: () => request<PipelineList>('/api/pipelines'),
   getPipeline: (id: string) => request<Pipeline>(`/api/pipelines/${id}`),
   createPipeline: (input: CreatePipelineRequest) =>
