@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -60,4 +61,24 @@ func (r *MemoryRepository) GetByID(ctx context.Context, id string) (Run, error) 
 		return Run{}, fmt.Errorf("%w: %s", ErrRunNotFound, id)
 	}
 	return Clone(execution), nil
+}
+
+func (r *MemoryRepository) List(ctx context.Context) ([]Run, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r.mu.RLock()
+	runs := make([]Run, 0, len(r.runs))
+	for _, execution := range r.runs {
+		runs = append(runs, Clone(execution))
+	}
+	r.mu.RUnlock()
+
+	sort.Slice(runs, func(left, right int) bool {
+		if runs[left].CreatedAt.Equal(runs[right].CreatedAt) {
+			return runs[left].ID < runs[right].ID
+		}
+		return runs[left].CreatedAt.After(runs[right].CreatedAt)
+	})
+	return runs, nil
 }
