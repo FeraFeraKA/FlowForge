@@ -25,6 +25,7 @@ export function useRun(runId: string | null) {
   const [loading, setLoading] = useState(Boolean(runId))
   const [error, setError] = useState<Error | null>(null)
   const [connected, setConnected] = useState(false)
+  const [events, setEvents] = useState<RunEvent[]>([])
 
   const refresh = useCallback(async () => {
     if (!runId) return
@@ -53,6 +54,7 @@ export function useRun(runId: string | null) {
         try {
           const event = JSON.parse(message.data) as RunEvent
           setRun((current) => applyEvent(current, event))
+          setEvents((current) => [event, ...current].slice(0, 50))
         } catch { setError(new Error('Received an invalid run event')) }
       }
       eventTypes.forEach((type) => source?.addEventListener(type, receive as EventListener))
@@ -71,5 +73,5 @@ export function useRun(runId: string | null) {
     }
   }, [refresh, runId])
 
-  return { run, loading, error, connected, refresh }
+  return { run, events, loading, error, connected, refresh }
 }
