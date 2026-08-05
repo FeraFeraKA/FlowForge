@@ -34,9 +34,15 @@ func (s *ConcurrentScheduler) handleAttemptResult(
 	}
 	job.Error = message.err.Error()
 	definition := runtime.state.definitions[job.JobID]
-	if job.Attempt > definition.MaxRetries {
+	finalFailure := job.Attempt > definition.MaxRetries
+	if finalFailure {
 		s.base.finishJob(job)
-		return s.notify(runtime.state.execution)
+	}
+	if err := s.notify(runtime.state.execution); err != nil {
+		return fmt.Errorf("observe failed job %q: %w", job.JobID, err)
+	}
+	if finalFailure {
+		return nil
 	}
 
 	if err := job.TransitionTo(runmodel.JobStatusRetrying); err != nil {
