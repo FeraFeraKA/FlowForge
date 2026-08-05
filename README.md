@@ -11,9 +11,20 @@ updates.
 
 ## Current stage
 
-Stage 0 contracts are fixed. Stage 1 provides the Go module, health endpoint,
-application signal context, and graceful HTTP shutdown. Domain implementation has
-not started yet.
+The backend MVP is implemented: DAG validation, in-memory repositories, explicit
+state transitions, sequential and concurrent schedulers, retries, timeouts,
+cancellation, REST, SSE, local CORS, and graceful shutdown. The test suite passes
+with Go's race detector.
+
+Run it locally:
+
+```bash
+cd backend
+go run ./cmd/api
+```
+
+The API listens on `http://localhost:8080`. Request examples and frontend-facing
+contracts live in the documents below.
 
 ## Documents
 
@@ -25,7 +36,7 @@ not started yet.
 - [Development plan](docs/development-plan.md)
 - [Post-MVP shell executor](docs/shell-executor.md)
 
-## Planned backend structure
+## Backend structure
 
 ```text
 backend/
@@ -37,6 +48,3 @@ backend/
   internal/events/      event model and in-process subscriptions
   internal/httpapi/     REST, SSE, DTOs, errors, middleware, CORS
 ```
-
-The directories exist as placeholders. Files will be introduced one completed
-stage at a time.

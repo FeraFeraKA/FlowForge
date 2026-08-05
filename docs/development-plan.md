@@ -68,19 +68,27 @@ channels, `MaxParallel`, explicit completion, cancellation, and race tests.
 
 ## Stage 9 — event bus
 
+Status: complete.
+
 Add event sequencing, bounded subscriber channels, non-blocking publication, and
 safe subscribe/unsubscribe ownership.
 
 ## Stage 10 — REST API
+
+Status: complete.
 
 Implement DTO mapping, error envelope, pipeline/run commands and queries, and
 explicit local-development CORS.
 
 ## Stage 11 — SSE
 
+Status: complete.
+
 Add streaming, flush, heartbeat, disconnect cleanup, and manual `curl -N` tests.
 
 ## Stage 12 — integration and hardening
+
+Status: complete.
 
 Test success, parallelism, retry, timeout, blocking, cancel, reconnect, and
 shutdown. Run:
