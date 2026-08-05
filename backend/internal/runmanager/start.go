@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"flowforge/backend/internal/pipeline"
 	runmodel "flowforge/backend/internal/run"
 )
 
@@ -17,6 +18,10 @@ func (m *Manager) StartRun(ctx context.Context, pipelineID string) (runmodel.Run
 	if err != nil {
 		return runmodel.Run{}, fmt.Errorf("get pipeline %q: %w", pipelineID, err)
 	}
+	return m.start(ctx, definition)
+}
+
+func (m *Manager) start(ctx context.Context, definition pipeline.Pipeline) (runmodel.Run, error) {
 	id, err := m.newID()
 	if err != nil {
 		return runmodel.Run{}, fmt.Errorf("create run ID: %w", err)
