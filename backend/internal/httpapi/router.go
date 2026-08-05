@@ -13,6 +13,7 @@ type healthResponse struct {
 type Dependencies struct {
 	Pipelines      PipelineService
 	Runs           RunService
+	Events         EventSource
 	AllowedOrigins []string
 }
 
@@ -20,6 +21,7 @@ func NewRouter(dependencies Dependencies) http.Handler {
 	mux := http.NewServeMux()
 	pipelines := pipelineHandler{service: dependencies.Pipelines}
 	runs := runHandler{service: dependencies.Runs}
+	stream := sseHandler{runs: dependencies.Runs, events: dependencies.Events}
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("POST /api/pipelines", pipelines.create)
 	mux.HandleFunc("GET /api/pipelines", pipelines.list)
@@ -28,6 +30,7 @@ func NewRouter(dependencies Dependencies) http.Handler {
 	mux.HandleFunc("GET /api/runs/{runID}", runs.get)
 	mux.HandleFunc("POST /api/runs/{runID}/cancel", runs.cancel)
 	mux.HandleFunc("POST /api/runs/{runID}/retry", runs.retry)
+	mux.HandleFunc("GET /api/runs/{runID}/events", stream.stream)
 	return corsMiddleware(dependencies.AllowedOrigins, mux)
 }
 

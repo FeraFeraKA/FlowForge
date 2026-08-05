@@ -59,6 +59,7 @@ func run() error {
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		Pipelines:      pipelineService,
 		Runs:           runManager,
+		Events:         eventBus,
 		AllowedOrigins: []string{"http://localhost:5173", "http://127.0.0.1:5173"},
 	})
 
