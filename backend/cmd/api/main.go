@@ -37,7 +37,6 @@ func run() error {
 		os.Interrupt,
 		syscall.SIGTERM,
 	)
-	defer stop()
 	pipelineRepository := pipeline.NewMemoryRepository()
 	pipelineService := pipeline.NewService(pipelineRepository)
 	runRepository := runmodel.NewMemoryRepository()
@@ -56,6 +55,11 @@ func run() error {
 		},
 	)
 	runManager := runmanager.New(appCtx, pipelineService, runRepository, concurrentScheduler)
+	defer func() {
+		stop()
+		runManager.Wait()
+		eventBus.Close()
+	}()
 	router := httpapi.NewRouter(httpapi.Dependencies{
 		Pipelines:      pipelineService,
 		Runs:           runManager,
@@ -93,9 +97,6 @@ func run() error {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shut down HTTP server: %w", err)
 	}
-	runManager.Wait()
-	eventBus.Close()
-
 	if err := <-serverErr; !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("serve HTTP after shutdown: %w", err)
 	}
