@@ -28,6 +28,28 @@ contracts live in the documents below.
 
 ## Documents
 
+## Deployment
+
+The React/Vite frontend is deployed on Vercel with root directory `frontend`.
+Set `VITE_API_URL` to the public Render API origin before building. The
+`frontend/vercel.json` rewrite supports direct links to application pages.
+
+The Go API runs on Render with these commands from the repository root:
+
+```sh
+cd backend && go test ./... && go build -o bin/api ./cmd/api
+```
+
+Start command: `cd backend && ./bin/api`. Render provides `PORT`; local runs
+default to port 8080. Set `ALLOWED_ORIGINS` to a comma-separated list of allowed
+frontend origins, for example `https://your-project.vercel.app`. Without this
+variable, only the local Vite development origins are allowed. `GET /health`
+returns the API health status.
+
+Repositories are in memory: pipelines and runs are lost on API restarts,
+redeployments, and free-service spin-downs. This deployment retains the current
+MVP storage model and does not provision a database.
+
 - [Architecture and ownership](docs/architecture.md)
 - [Domain contracts](docs/domain.md)
 - [HTTP API contract](docs/http-api.md)

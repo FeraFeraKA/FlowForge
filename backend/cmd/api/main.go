@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,7 +21,6 @@ import (
 )
 
 const (
-	serverAddress   = ":8080"
 	shutdownTimeout = 10 * time.Second
 )
 
@@ -32,6 +32,20 @@ func main() {
 }
 
 func run() error {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	serverAddress := ":" + port
+	allowedOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173"}
+	if configured := os.Getenv("ALLOWED_ORIGINS"); configured != "" {
+		allowedOrigins = nil
+		for _, origin := range strings.Split(configured, ",") {
+			if origin = strings.TrimSpace(origin); origin != "" {
+				allowedOrigins = append(allowedOrigins, origin)
+			}
+		}
+	}
 	appCtx, stop := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
@@ -64,7 +78,7 @@ func run() error {
 		Pipelines:      pipelineService,
 		Runs:           runManager,
 		Events:         eventBus,
-		AllowedOrigins: []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		AllowedOrigins: allowedOrigins,
 	})
 
 	server := &http.Server{
