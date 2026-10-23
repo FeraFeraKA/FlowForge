@@ -33,6 +33,7 @@ export function RunPage() {
     setCommand('retry'); setCommandError(null)
     try {
       const next = await api.retryRun(run.id)
+      setCommand(null)
       void navigate(`/runs/${next.id}`)
     } catch (cause) {
       setCommandError(cause instanceof Error ? cause : new Error('Unable to retry run'))

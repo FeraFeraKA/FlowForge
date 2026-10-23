@@ -41,6 +41,8 @@ export function useRun(runId: string | null) {
 
   useEffect(() => {
     if (!runId) { setRun(null); setLoading(false); return }
+    setEvents([])
+    setConnected(false)
     let active = true
     let source: EventSource | null = null
     let retry: number | undefined
