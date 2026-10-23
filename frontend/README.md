@@ -1,32 +1,72 @@
-# React + TypeScript + Vite
+# FlowForge frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19, TypeScript, Vite, React Router, Tailwind CSS, and Radix UI.
+The typed REST client and native `EventSource` call the Go API directly.
 
-Currently, two official plugins are available:
+- App: <https://flowforge-weld-five.vercel.app>
+- API: <https://flowforge-api-m3ua.onrender.com>
+- [Deployment settings](../docs/deployment.md)
+- [Implementation and data flow](../docs/frontend.md)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local setup
 
-## React Compiler
+Use Node.js 24 and pnpm compatible with the version 9 lockfile. From this directory:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Run `go run ./cmd/api` separately from `backend/`. Open `http://localhost:5173`;
+the client defaults to `http://localhost:8080`.
+
+For a different API, create the ignored file `.env.local` in this directory:
+
+```dotenv
+VITE_API_URL=https://flowforge-api-m3ua.onrender.com
+```
+
+Restart Vite after changes. The API must allow your local browser origin too;
+the hosted API currently allows only the primary hosted frontend. Prefer the
+local API during development to avoid changing shared service settings.
+
+## Routes
+
+| Route | View |
+| --- | --- |
+| `/` | Pipeline list |
+| `/pipelines/new` | Create a pipeline and jobs |
+| `/pipelines/:pipelineId` | Definition and Start Run |
+| `/runs/:runId` | Job states, cancel/retry, live events |
+
+Unknown routes redirect to `/`. There is no separate `/pipelines` list route.
+
+## Commands
+
+```sh
+pnpm build
+pnpm lint
+pnpm preview
+```
+
+Build type-checks with `tsc -b` and emits `dist/`. Preview uses the API URL
+embedded at build time; its origin (usually port 4173) needs an API allowlist entry.
+
+## Vercel
+
+Root: `frontend`; framework: Vite; output: `dist`; Node.js: 24.x.
+The configured hosted command is `npm run build`, invoking the same script as
+`pnpm build`; installation uses the pnpm lockfile.
+
+Set `VITE_API_URL=https://flowforge-api-m3ua.onrender.com` in Production and
+Preview before building. This is public build-time configuration, not a secret.
+Render must also allow each frontend origin. `vercel.json` handles direct SPA
+links; REST/SSE traffic goes to Render, not a Vercel API route.
+
+## Demo limits
+
+[Import the complex fixture](../docs/examples/README.md) to demonstrate parallel
+work, timeouts, retries, and blocked jobs. Demos are not seeded automatically.
+Only delay jobs exist; CI/CD stage names are illustrative. The event panel shows
+live orchestration events, not shell output or historical logs. Data disappears
+when the API process restarts.

@@ -4,6 +4,12 @@ A real shell executor is a valuable next step, but it changes FlowForge's securi
 boundary. It is explicitly outside the MVP and must not be implemented as a small
 extension that passes user input to `sh -c`.
 
+The current [Vercel/Render deployment](deployment.md) only runs delay jobs.
+Demo names such as "Build artifacts" and "Deploy preview" are simulation labels;
+they do not invoke tools or launch deployments. The public API has no
+authentication, so exposing a command executor would require a separate access
+and isolation design.
+
 ## Threat model
 
 A process executing arbitrary commands has the operating-system permissions of the
@@ -27,7 +33,7 @@ ignore cancellation or leave child processes behind.
 
 ## Recommended evolution
 
-1. Finish the MVP with only safe in-process executors.
+1. Retain the current MVP's safe in-process delay executor.
 2. Add a trusted local `CommandExecutor` that accepts an executable and argument
    array, not a concatenated shell string.
 3. Run every attempt in a dedicated temporary working directory with a minimal
@@ -38,5 +44,5 @@ ignore cancellation or leave child processes behind.
    boundary such as a locked-down container or dedicated worker process. A Go
    goroutine is not a security boundary.
 
-The executor interface planned for the MVP should remain small enough to support
+The implemented executor interface should remain small enough to support
 this later, but no shell-specific fields or abstractions should be added early.

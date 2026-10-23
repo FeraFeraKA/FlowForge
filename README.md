@@ -1,72 +1,110 @@
 # FlowForge
 
-FlowForge is a small job orchestration engine written in Go. A pipeline describes
-a directed acyclic graph of jobs; every pipeline start creates an independent run
-whose jobs are scheduled according to dependencies, retries, timeouts,
-cancellation, and a concurrency limit.
+FlowForge is a job orchestration demo with a Go API and a React/TypeScript
+frontend. Define a directed acyclic graph of jobs, start independent runs, and
+watch dependencies, parallel execution, retries, timeouts, and cancellation over
+Server-Sent Events (SSE).
 
-The backend is the only implementation target during the MVP. The future frontend
-will use REST for commands and snapshots and Server-Sent Events (SSE) for live
-updates.
+## Live application
 
-## Current stage
+| Component | Address | Hosting |
+| --- | --- | --- |
+| Frontend | [Open FlowForge](https://flowforge-weld-five.vercel.app) | Vercel, React/Vite |
+| API | [Health endpoint](https://flowforge-api-m3ua.onrender.com/health) | Render, Go web service |
 
-The backend MVP is implemented: DAG validation, in-memory repositories, explicit
-state transitions, sequential and concurrent schedulers, retries, timeouts,
-cancellation, REST, SSE, local CORS, and graceful shutdown. The test suite passes
-with Go's race detector.
+Deployment uses the `main` branch. See the [deployment guide](docs/deployment.md)
+for exact settings, environment variables, release checks, and troubleshooting.
 
-Run it locally:
+## Features and limits
 
-```bash
+- Create pipelines with DAG validation and a per-run concurrency limit.
+- Start, cancel, and retry independent runs; inspect job states and attempts.
+- View live execution events and recover REST snapshots after reconnecting.
+- Import the [11-job demo](docs/examples/README.md) to explore failure and retries.
+
+Only the in-process `delay` executor is implemented. Names such as "Build artifacts"
+or "Deploy preview" simulate a CI/CD flow: they do not execute shell commands,
+build a repository, or deploy another application.
+
+This is a public MVP without authentication, a database, or durable event history.
+Pipelines and runs live in one API process and disappear when it restarts or is
+replaced. Demo definitions are in the repository but are **not loaded automatically**.
+Import them again after a reset.
+
+## Local development
+
+Requirements: Go 1.22 or newer, Node.js 24 (matching the Vercel project), and pnpm
+compatible with the version 9 lockfile.
+
+Start the API in one terminal:
+
+```sh
 cd backend
 go run ./cmd/api
 ```
 
-The API listens on `http://localhost:8080`. Request examples and frontend-facing
-contracts live in the documents below.
-
-## Documents
-
-## Deployment
-
-The React/Vite frontend is deployed on Vercel with root directory `frontend`.
-Set `VITE_API_URL` to the public Render API origin before building. The
-`frontend/vercel.json` rewrite supports direct links to application pages.
-
-The Go API runs on Render with these commands from the repository root:
+Start the frontend in another terminal:
 
 ```sh
-cd backend && go test ./... && go build -o bin/api ./cmd/api
+cd frontend
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Start command: `cd backend && ./bin/api`. Render provides `PORT`; local runs
-default to port 8080. Set `ALLOWED_ORIGINS` to a comma-separated list of allowed
-frontend origins, for example `https://your-project.vercel.app`. Without this
-variable, only the local Vite development origins are allowed. `GET /health`
-returns the API health status.
+Open `http://localhost:5173`. The API defaults to `http://localhost:8080`;
+no environment variables are needed for this local setup. If Vite chooses another
+port, use port 5173 or add that exact origin to the API allowlist.
 
-Repositories are in memory: pipelines and runs are lost on API restarts,
-redeployments, and free-service spin-downs. This deployment retains the current
-MVP storage model and does not provision a database.
+## Verification
 
+From `backend/`:
+
+```sh
+go vet ./...
+go test ./...
+go test -race ./...
+```
+
+From `frontend/`:
+
+```sh
+pnpm build
+pnpm lint
+```
+
+Render runs `go test ./...` before compiling the API. Race detection and
+`go vet` are separate developer checks, not part of that build command.
+
+## Documentation
+
+- [Deployment and operations](docs/deployment.md)
+- [Demo pipelines and import commands](docs/examples/README.md)
+- [Frontend setup](frontend/README.md)
+- [Frontend implementation and data flow](docs/frontend.md)
 - [Architecture and ownership](docs/architecture.md)
 - [Domain contracts](docs/domain.md)
 - [HTTP API contract](docs/http-api.md)
 - [Realtime events contract](docs/events.md)
-- [Frontend handoff](docs/frontend.md)
-- [Development plan](docs/development-plan.md)
-- [Post-MVP shell executor](docs/shell-executor.md)
+- [Development status and next steps](docs/development-plan.md)
+- [Future shell executor](docs/shell-executor.md)
 
-## Backend structure
+## Repository structure
 
 ```text
 backend/
-  cmd/api/              application composition and process lifecycle
-  internal/pipeline/    pipeline model, DAG validation, repository, service
-  internal/run/         run model, snapshots, and state transitions
-  internal/scheduler/   scheduling algorithm and executors
-  internal/runmanager/  long-lived run contexts and active-run registry
-  internal/events/      event model and in-process subscriptions
-  internal/httpapi/     REST, SSE, DTOs, errors, middleware, CORS
+  cmd/api/              composition, environment, HTTP server, shutdown
+  internal/pipeline/    definitions, validation, in-memory repository
+  internal/run/         snapshots, transitions, in-memory repository
+  internal/scheduler/   concurrency, retries, timeouts, cancellation
+  internal/runmanager/  lifecycle and active cancellation registry
+  internal/events/      typed events and in-process subscriptions
+  internal/httpapi/     REST/SSE handlers, DTOs, errors, CORS
+frontend/
+  src/api/              typed REST client and contracts
+  src/hooks/            snapshots and SSE lifecycle
+  src/pages/            list, creation, details, run view
+  src/components/       layout, job cards, event stream, UI
+  vercel.json           SPA fallback for direct application links
+docs/
+  examples/             JSON fixtures and import instructions
 ```

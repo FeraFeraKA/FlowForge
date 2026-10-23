@@ -1,107 +1,66 @@
-# Frontend handoff
+# Frontend implementation
 
-This document separates beginner-friendly React work from integration work. The
-frontend is planned for React, TypeScript, Vite, and `pnpm`. It has no dependency
-on a database or authentication.
+The React/TypeScript/Vite frontend is implemented and deployed on
+[Vercel](https://flowforge-weld-five.vercel.app), calling the
+[Render API](https://flowforge-api-m3ua.onrender.com/health) directly.
+See [frontend setup](../frontend/README.md) and [deployment](deployment.md).
 
-## Suggested application pages
+## Pages and components
 
-1. `/pipelines` — pipeline list, empty/error/loading states, and create action.
-2. `/pipelines/new` — controlled form for pipeline and jobs.
-3. `/pipelines/:pipelineId` — pipeline details and start-run action.
-4. `/runs/:runId` — live run status, jobs, dependencies, attempts, and logs.
+| Route | Source in `frontend/src/pages/` | Responsibility |
+| --- | --- | --- |
+| `/` | `PipelinesPage.tsx` | List, loading, empty/error states |
+| `/pipelines/new` | `CreatePipelinePage.tsx` | Controlled pipeline/job form and create request |
+| `/pipelines/:pipelineId` | `PipelinePage.tsx` | Definition, dependencies, Start Run |
+| `/runs/:runId` | `RunPage.tsx` | Snapshot, job states, cancel/retry, live events |
 
-## Work suitable for the second frontend developer
+`App.tsx` defines routes and redirects unknown paths to `/`. `AppShell`
+provides shared navigation. `JobGraph` renders ordered job cards and dependency
+labels; it is not a graphical node-and-edge editor. `EventLog` renders live events;
+`Metric`, `StatusBadge`, and shared UI components provide presentation.
 
-These components can initially be built with typed mock props and Storybook or a
-small local mock-data module; they do not need networking knowledge.
+## REST flow
 
-- `AppShell` and page layout;
-- `StatusBadge` for every documented run/job status;
-- `ProgressBar` with accessible label and 0–100 clamping;
-- `PipelineCard` and `PipelineList`;
-- loading, empty, and error-state components;
-- `PipelineForm` with controlled name and `maxParallel` inputs;
-- `JobDefinitionForm` for ID, name, type, duration, timeout, retries, retry delay;
-- add/remove/reorder job form rows;
-- dependency multi-select that prevents obvious self-selection;
-- client-side field-error display using API `details` paths;
-- pipeline detail summary and dependency list;
-- `RunHeader`, job cards, attempt counter, timestamps, and error display;
-- log list and basic filters, using mock log entries until backend logging exists;
-- confirmation modal for Run cancellation;
-- responsive and accessible keyboard/focus behavior.
+`src/api/types.ts` defines DTOs. `src/api/client.ts` owns JSON requests,
+`ApiError` decoding, and `VITE_API_URL` (build-time; default localhost:8080).
+`usePipelines` loads and refreshes the list; `usePipeline` loads one definition.
 
-The form may provide friendly client validation, but the backend remains the
-authority for graph validation and executor configuration.
+The creation form maps string fields into the request DTO and navigates to the
+new pipeline. Durations use Go syntax; dependencies are comma-separated job IDs.
+Backend validation is authoritative. Start Run navigates to the new run.
+Cancel is available for active runs; Retry is available for failed/cancelled runs
+and creates a new run without changing the original. Mutation errors are displayed.
+There is no TanStack Query cache or authentication layer.
 
-## Integration work
+## SSE flow
 
-The primary developer can own:
+`src/hooks/use-run.ts` implements `useRun`:
 
-- typed REST client and API error decoding;
-- optional TanStack Query setup for REST snapshots and mutation invalidation;
-- pipeline creation and start/cancel/retry mutations;
-- `useRunEvents(runId)` SSE lifecycle;
-- a reducer that replaces state from REST and applies typed events;
-- reconnection with backoff and snapshot refresh;
-- detection of duplicate/out-of-order event IDs and event-ID gaps;
-- synchronization between query cache and realtime state;
-- rendering the DAG/dependency relationships;
-- complex Run-page state and terminal-state handling.
+1. Fetch a current REST snapshot.
+2. Open `EventSource` at the API's `/api/runs/<runId>/events`.
+3. Replace the snapshot on `payload.run`; merge mutable state on `payload.job`.
+4. Keep the newest 50 events for the visible list.
+5. On error, close the stream, wait two seconds, fetch another snapshot, reconnect.
+6. Close the stream and clear retry timers during cleanup.
 
-## Recommended TypeScript contracts
+The list resets on a new subscription lifecycle; it has no history API.
+Opening a finished run may show completed jobs and an empty event panel.
 
-Define explicit frontend types matching the documented DTOs, including string
-unions for statuses and event types. Do not share generated Go structs directly.
-Keep three layers where useful:
+The current hook does not deduplicate IDs or detect sequence gaps. There is a
+snapshot/subscription race and no replay buffer; reload for an authoritative
+snapshot if needed. Gap detection and replay are future hardening work.
 
-- API DTOs matching wire JSON;
-- form state, where duration fields may temporarily be empty/invalid strings;
-- view models derived for display.
+## Hosting
 
-## Mock-first workflow
+Vercel uses root `frontend`. `vercel.json` supplies the direct-route SPA fallback.
+The API is on Render; changing its hostname requires rebuilding the frontend.
+Preview domains, other aliases, and local preview ports need explicit Render
+CORS entries. Native `EventSource` follows cross-origin rules just like REST.
 
-Create fixtures for at least:
+## Demo verification
 
-- an empty pipeline list;
-- a valid diamond-shaped pipeline;
-- pending and running Runs;
-- a successful Run;
-- a failed Run with blocked downstream jobs;
-- a retrying job on attempt 2;
-- a cancelled Run;
-- validation and conflict error envelopes.
-
-Mock event sequences should include success, retry-then-success, final failure with
-blocked jobs, cancellation, duplicate event, and reconnect snapshot replacement.
-
-## Suggested reducer actions
-
-The reducer does not need to mirror raw event names exactly. A small stable set is
-enough:
-
-```text
-snapshotReceived
-eventReceived
-connectionChanged
-streamError
-```
-
-`snapshotReceived` replaces authoritative Run state. `eventReceived` replaces the
-affected JobRun or Run summary using the complete entity carried by the payload.
-
-## Local development assumptions
-
-- frontend default origin: `http://localhost:5173`;
-- backend base URL is configuration, not hardcoded throughout components;
-- all commands use `pnpm`, never npm;
-- `EventSource` cannot set arbitrary headers in the usual browser API, which is
-  acceptable because the MVP has no authentication;
-- UI must not assume SSE delivers historical events.
-
-## Definition of frontend readiness
-
-The backend is ready for integration when it provides stable examples for every
-endpoint, a complete Run snapshot, the event envelope and payloads, CORS, predictable
-error codes, and a scripted demo pipeline covering success/failure/retry/cancel.
+[Import the 11-job fixture](examples/README.md) for dependency scheduling,
+parallelism, timeouts, retry, and blocking. Only delay jobs run; fixture import
+is manual. Verify creation, Start Run, events, cancel/retry, and direct URL reload.
+After an API restart, old definition/run IDs may return `404`.
+A `CONNECTED` stream does not imply that earlier events were replayed.

@@ -1,13 +1,22 @@
 # Development plan
 
+## Current deployed state
+
+The Go API and React/Vite frontend are implemented and deployed on Render and
+Vercel. See [deployment and operations](deployment.md) for service settings,
+environment variables, release checks, and data-loss behavior.
+
+The stages below record the backend implementation. They are not a list of
+missing work. Current frontend behavior is described in [frontend](frontend.md).
+
 Each stage starts by stating its goal, files, responsibilities, data flow,
 goroutines, state owner, error handling, verification commands, and one manual
 test. A stage is reviewed before the next one begins.
 
 ## Stage 0 — contracts and skeleton
 
-Status: complete when these documents and empty package directories are reviewed.
-No Go implementation or dependency is introduced.
+Status: complete. Contracts and package boundaries were established before
+implementation.
 
 ## Stage 1 — process skeleton and health
 
@@ -80,6 +89,8 @@ Status: complete.
 Implement DTO mapping, error envelope, pipeline/run commands and queries, and
 explicit local-development CORS.
 
+Deployment now supplies allowed frontend origins through `ALLOWED_ORIGINS`.
+
 ## Stage 11 — SSE
 
 Status: complete.
@@ -101,3 +112,27 @@ go test -race ./...
 ```
 
 Document final examples and provide frontend demo fixtures.
+
+## Stage 13 — frontend and hosting
+
+Status: implemented and deployed.
+
+The frontend lists/creates pipelines, shows definitions, starts runs, and displays
+live job states/events with cancel/retry actions. Vercel hosts the static bundle
+with direct-route rewrites. Render builds/tests the Go API and starts it using
+`PORT`; `ALLOWED_ORIGINS` authorizes the frontend origin.
+
+Deployment verification covered health, creation, successful execution, SSE,
+and page reload on a direct route. The [complex fixture](examples/README.md)
+demonstrates timeout/retry/blocking and is imported manually.
+
+## Remaining work
+
+- Durable storage for pipelines and run snapshots; restart currently clears them.
+- Optional idempotent demo seeding; no startup import exists today.
+- Authentication/authorization before using the public demo for private workloads.
+- SSE ID deduplication, gap detection, and replay.
+- A graphical DAG editor if needed; the UI currently renders job/dependency cards.
+- Durable job logs and artifacts; the event panel is a live orchestration feed.
+- External monitoring and a resolved access path for Vercel runtime logs.
+- Isolated command execution only after the [shell-executor design](shell-executor.md).

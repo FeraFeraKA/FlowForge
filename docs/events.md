@@ -1,5 +1,11 @@
 # Realtime event contract
 
+The deployed stream is on the Render API:
+`https://flowforge-api-m3ua.onrender.com/api/runs/{runID}/events`.
+Use a current run ID returned by the API. The frontend connects directly from
+Vercel; see [deployment](deployment.md) for origins and [frontend](frontend.md)
+for the implemented reconnect behavior.
+
 ## SSE endpoint
 
 `GET /api/runs/{runID}/events` returns:
@@ -36,8 +42,9 @@ data: {"id":"42","type":"job.started","runId":"run_opaque","jobId":"tests","time
 - `jobId` is omitted for run-level events;
 - `type` is duplicated in the SSE `event` field so `EventSource` listeners can
   subscribe by type;
-- payloads contain the current affected `run` summary or complete affected
-  `job`, not an ambiguous JSON patch;
+- run payloads contain the complete REST-style run snapshot; job payloads contain
+  `jobId`, `status`, `attempt`, `progress`, `error`, `startedAt`, and
+  `finishedAt`. Job definition fields remain in the REST snapshot;
 - clients ignore unknown event types and unknown payload fields.
 
 Initial event types:
@@ -56,9 +63,8 @@ Initial event types:
 - The SSE handler never closes the channel.
 - Disconnect, write failure, request cancellation, or server shutdown removes the
   subscription.
-- The handler periodically writes an SSE comment heartbeat so dead connections can
-  be discovered. The exact interval will be configuration, with 15 seconds as the
-  initial default.
+- The handler writes an SSE comment heartbeat every 15 seconds. This interval is
+  currently a code constant, not an environment setting.
 
 ## Slow clients
 
@@ -72,21 +78,36 @@ from REST.
 The MVP event bus is in memory and does not provide replay, including replay based
 on `Last-Event-ID`. Event IDs are still present for ordering and future evolution.
 
-Frontend reconnection sequence:
+The current frontend reconnects as follows:
 
 1. close or observe loss of the old stream;
 2. fetch `GET /api/runs/{runID}`;
 3. replace local state with that authoritative snapshot;
 4. open a new SSE stream;
-5. apply subsequently received events in increasing event-ID order.
+5. apply newly received events as delivered and retain the latest 50 in the UI.
+
+It waits two seconds before reconnecting after a stream error. ID deduplication
+and gap detection are not implemented in the current hook.
 
 There is a small snapshot/subscription race in this MVP: an event can occur after
 the snapshot and before subscription. The next received event carries the complete
-affected JobRun, and terminal UI should refetch after reconnect or when it detects
-an event-ID gap. A later version may add a bounded per-run replay buffer and
+affected job's mutable state. Reconnection refetches the run; a manual page reload
+also restores a snapshot if the UI becomes stale. A later version may add gap
+detection, a bounded per-run replay buffer, and
 `Last-Event-ID` support.
 
 ## Source of truth
 
-SSE is never the only persisted representation of state. Opening a Run page always
-starts from a REST snapshot. Events improve freshness but do not replace it.
+SSE is not the only representation of state. Opening a Run page starts from a
+REST snapshot, but that snapshot is also in memory: neither layer survives an API
+process restart. Events improve freshness but do not replace snapshots. Opening
+a finished run may show an empty event log because past events are not replayed.
+
+To inspect a live run from a terminal (replace RUN_ID):
+
+```sh
+curl -N https://flowforge-api-m3ua.onrender.com/api/runs/RUN_ID/events
+```
+
+Connect while the run is active to observe transitions. A connected stream for
+a finished run can remain open with heartbeats and no new execution events.

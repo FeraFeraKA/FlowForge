@@ -1,5 +1,16 @@
 # HTTP API contract
 
+## Base URLs
+
+- Deployed API: `https://flowforge-api-m3ua.onrender.com`.
+- Local API: `http://localhost:8080`, unless `PORT` changes it.
+- Deployed frontend: `https://flowforge-weld-five.vercel.app`.
+
+All paths below are relative to the API origin, not the frontend origin.
+The API currently has no authentication or cookies. CORS is a browser-origin
+policy, not access control. Data is in memory; IDs may cease to exist after an
+API restart. See [deployment](deployment.md) and [demo import](examples/README.md).
+
 All request and response bodies use JSON and camelCase fields. Unknown fields in
 command payloads are rejected. Unless noted otherwise, successful responses use
 `Content-Type: application/json`.
@@ -137,10 +148,17 @@ Opens an SSE stream as specified in `docs/events.md`. Missing run: `404`.
 
 ## CORS
 
-Development configuration accepts an explicit list of local frontend origins,
-initially `http://localhost:5173`. It allows `GET`, `POST`, and `OPTIONS`, plus the
-`Content-Type` and `Last-Event-ID` headers. Wildcard origin with credentials is not
-used. The MVP has no authentication or cookies.
+The process reads `ALLOWED_ORIGINS` at startup as a comma-separated list of exact
+origins. Without it, defaults are `http://localhost:5173` and
+`http://127.0.0.1:5173`. A non-empty value replaces those defaults.
+The deployed allowlist contains `https://flowforge-weld-five.vercel.app`.
+
+The middleware allows `GET`, `POST`, and `OPTIONS`, plus `Content-Type` and
+`Last-Event-ID`. A request with an unlisted `Origin` returns `403` with code
+`origin_not_allowed`; requests without `Origin` proceed normally.
+Allowed preflight requests return `204`. Wildcard origins and credentials are
+not used. Every preview URL or additional frontend alias needs an explicit entry.
+The same middleware protects the SSE route.
 
 ## DTO boundary
 
