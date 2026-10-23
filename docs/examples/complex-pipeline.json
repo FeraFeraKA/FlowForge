@@ -1,0 +1,17 @@
+{
+  "name": "Platform release — full engine demo",
+  "maxParallel": 3,
+  "jobs": [
+    {"id":"source","name":"Fetch source","type":"delay","dependsOn":[],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1200ms"}},
+    {"id":"cache","name":"Restore cache","type":"delay","dependsOn":[],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"800ms"}},
+    {"id":"install","name":"Install dependencies","type":"delay","dependsOn":["source","cache"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1500ms"}},
+    {"id":"lint","name":"Lint codebase","type":"delay","dependsOn":["install"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"2s"}},
+    {"id":"unit","name":"Unit tests (intentional timeout)","type":"delay","dependsOn":["install"],"timeout":"1s","maxRetries":2,"retryDelay":"750ms","config":{"duration":"4s"}},
+    {"id":"build","name":"Build artifacts","type":"delay","dependsOn":["install"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"2500ms"}},
+    {"id":"security","name":"Security scan","type":"delay","dependsOn":["build"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1200ms"}},
+    {"id":"package","name":"Package release","type":"delay","dependsOn":["lint","build"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1s"}},
+    {"id":"integration","name":"Integration tests","type":"delay","dependsOn":["package"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1500ms"}},
+    {"id":"report","name":"Publish quality report","type":"delay","dependsOn":["security","integration"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"700ms"}},
+    {"id":"deploy","name":"Deploy preview","type":"delay","dependsOn":["unit","security","integration"],"timeout":"5s","maxRetries":0,"retryDelay":"0s","config":{"duration":"1s"}}
+  ]
+}
